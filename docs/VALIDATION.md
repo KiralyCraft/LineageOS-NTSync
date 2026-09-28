@@ -4,6 +4,10 @@ The ZIP is delivered to `/sdcard/Download/` for installation in Magisk. The
 user installs it and performs any required reboot. No build or upload command
 installs or loads the module.
 
+Before Magisk installation, a manually loaded `.ko` may be tested through
+upstream selftests and an isolated Wine prefix. This is recorded separately;
+the release tag remains gated on a successful Magisk service startup.
+
 After installation:
 
 1. Confirm Magisk lists `lineageos_ntsync` and inspect `service.log`.

@@ -15,6 +15,7 @@ info = json.loads(next((root / 'dist').glob('*-build-info.json')).read_text())
 head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
 assert receipt['native_selftests'] == 'PASS'
 assert receipt['wine_backend'] == 'PASS'
+assert receipt['magisk_install'] == 'PASS'
 assert receipt['module_sha256'] == info['module_sha256']
 assert receipt['source_commit'] == info['source_commit'] == head
 PY

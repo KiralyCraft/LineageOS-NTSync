@@ -24,7 +24,11 @@ if ! grep -R -F -q 'ntsync: up and running.' "$work/wine-smoke.log" "$validation
 fi
 printf 'Native ntsync selftests and isolated Wine smoke: PASS\n'
 REMOTE
-python3 - "$root" <<'PY'
+magisk_install=PENDING
+if ssh -F /dev/null "$target" 'test -f /data/adb/modules/lineageos_ntsync/service.log && grep -q "PASS: /dev/ntsync ready" /data/adb/modules/lineageos_ntsync/service.log'; then
+  magisk_install=PASS
+fi
+python3 - "$root" "$magisk_install" <<'PY'
 import datetime
 import json
 import pathlib
@@ -32,6 +36,7 @@ import subprocess
 import sys
 
 root = pathlib.Path(sys.argv[1])
+magisk_install = sys.argv[2]
 info = json.loads(next((root / 'dist').glob('*-build-info.json')).read_text())
 receipt = {
     'validated_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -39,6 +44,7 @@ receipt = {
     'module_sha256': info['module_sha256'],
     'native_selftests': 'PASS',
     'wine_backend': 'PASS',
+    'magisk_install': magisk_install,
     'gameplay': 'PENDING_USER_RESTART',
 }
 (root / 'dist/device-validation.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
