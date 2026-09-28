@@ -44,6 +44,10 @@ if [ ! -e /dev/ntsync ]; then
     exit 1
   fi
 fi
+if [ ! -c /dev/ntsync ]; then
+  log 'FAIL: /dev/ntsync is not a character device'
+  exit 1
+fi
 if ! chmod 0666 /dev/ntsync; then
   log 'FAIL: unable to set /dev/ntsync permissions'
   exit 1
