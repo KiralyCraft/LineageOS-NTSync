@@ -5,7 +5,8 @@ user installs it and performs any required reboot. No build or upload command
 installs or loads the module.
 
 Before Magisk installation, a manually loaded `.ko` may be tested through
-upstream selftests and an isolated Wine prefix. This is recorded separately;
+upstream selftests and the existing NieR Wine prefix after its game and Wine
+server have exited. This is recorded separately;
 the release tag remains gated on a successful Magisk service startup.
 
 After installation:
@@ -15,8 +16,8 @@ After installation:
    accessibility from the chroot user.
 3. Run the imported Linux ntsync selftests as that user. Check dmesg for
    `ntsync`, module signature, CFI, and SELinux failures.
-4. Start GE-Proton11-6 with a fresh temporary prefix and a short built-in
-   command. Confirm `ntsync: up and running.` and that the test prefix exits.
+4. Start GE-Proton11-6 in the NieR prefix with a short built-in command.
+   Confirm `ntsync: up and running.` and that the test process exits.
 5. Compare NieR frame presentation only after the user manually restarts it.
 
 Do not interpret a present `/dev/ntsync` as proof that ioctls or Wine work.

@@ -55,9 +55,9 @@ After installation, inspect
 `/data/adb/modules/lineageos_ntsync/service.log`, run its `status.sh`, and run
 `make device-test` from this repository. That test copies upstream ntsync
 selftests to a temporary directory on the phone and executes them as the
-chroot user. It also exercises the installed GE-Proton in an isolated prefix.
-It never starts or restarts NieR. A game performance comparison requires a
-separate manual restart.
+chroot user. It also exercises GE-Proton in the existing NieR prefix after
+the game and its Wine server exit. A game performance comparison requires a
+separate launch.
 
 If installation or boot loading fails, disable this module in Magisk and
 reboot. The package does not change the boot image or any other module.

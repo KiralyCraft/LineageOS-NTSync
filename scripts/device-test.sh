@@ -11,18 +11,26 @@ work=/tmp/ntsync-los-validation
 gcc -O2 -pthread -I"$work/driver/include/uapi" \
   "$work/tests/upstream/drivers/ntsync/ntsync.c" -o "$work/ntsync-selftest"
 timeout 120 runuser -u kiraly -- "$work/ntsync-selftest"
-validation=/tmp/ntsync-los-wine-validation
-mkdir -p "$validation"
-chown 4000:60000 "$validation"
-timeout 120 runuser -u kiraly -- env WINPREFIX_ROOT="$validation" PROTON_LOG=1 \
-  /usr/local/bin/proton-app ntsync-smoke --runinprefix cmd /c exit \
+prefix=/mnt/usbssd/winprefixes/nier
+if pgrep -u kiraly -f 'NieRAutomata.exe' >/dev/null ||
+   pgrep -u kiraly -x wineserver >/dev/null; then
+  echo 'The NieR process or its Wine server is still running; stop it before backend selection' >&2
+  exit 1
+fi
+test -d "$prefix/pfx"
+touch "$work/wine-start.marker"
+timeout 120 runuser -u kiraly -- env HOME=/home/kiraly \
+  WINPREFIX_ROOT=/mnt/usbssd/winprefixes PROTON_LOG=1 \
+  /usr/local/bin/proton-app nier --runinprefix cmd /c exit \
   > "$work/wine-smoke.log" 2>&1
-if ! grep -R -F -q 'ntsync: up and running.' "$work/wine-smoke.log" "$validation/ntsync-smoke/logs" 2>/dev/null; then
+if ! grep -F -q 'ntsync: up and running.' "$work/wine-smoke.log" &&
+   ! find "$prefix/logs" -type f -newer "$work/wine-start.marker" \
+      -exec grep -F -l 'ntsync: up and running.' {} + | grep -q .; then
   cat "$work/wine-smoke.log"
   echo 'Wine did not confirm ntsync backend' >&2
   exit 1
 fi
-printf 'Native ntsync selftests and isolated Wine smoke: PASS\n'
+printf 'Native ntsync selftests and NieR-prefix Wine backend: PASS\n'
 REMOTE
 magisk_install=PENDING
 if ssh -F /dev/null "$target" 'test -f /data/adb/modules/lineageos_ntsync/service.log && grep -q "PASS: /dev/ntsync ready" /data/adb/modules/lineageos_ntsync/service.log'; then
@@ -44,6 +52,7 @@ receipt = {
     'module_sha256': info['module_sha256'],
     'native_selftests': 'PASS',
     'wine_backend': 'PASS',
+    'wine_prefix': '/mnt/usbssd/winprefixes/nier',
     'magisk_install': magisk_install,
     'gameplay': 'PENDING_USER_RESTART',
 }
