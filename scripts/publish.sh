@@ -4,6 +4,20 @@ root=$(git rev-parse --show-toplevel)
 cd "$root"
 test -f dist/device-validation.json || { echo 'Native and Wine device validation is required before publication' >&2; exit 1; }
 python3 scripts/verify-dist.py dist
+python3 - <<'PY'
+import json
+import pathlib
+import subprocess
+
+root = pathlib.Path.cwd()
+receipt = json.loads((root / 'dist/device-validation.json').read_text())
+info = json.loads(next((root / 'dist').glob('*-build-info.json')).read_text())
+head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+assert receipt['native_selftests'] == 'PASS'
+assert receipt['wine_backend'] == 'PASS'
+assert receipt['module_sha256'] == info['module_sha256']
+assert receipt['source_commit'] == info['source_commit'] == head
+PY
 branch=release/rc1-publish
 if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null 2>&1; then
   echo "Remote publication branch already exists: $branch" >&2

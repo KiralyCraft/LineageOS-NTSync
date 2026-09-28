@@ -38,6 +38,9 @@ an isolated build-server directory, builds the module, packages it, downloads
 the artifacts, and verifies them. A local dirty tree is recorded in the build
 manifest; release publication requires a clean commit.
 
+`make stage-release` commits verified assets to a private Git branch for the
+manual installation handoff. It does not invoke GitHub Actions or an API.
+
 Upstream source and licensing are recorded in `driver/UPSTREAM.md` and `LICENSE`.
 The driver and UAPI header were imported from Linux stable v6.18.54. Any
 compatibility changes must be kept narrow and documented.

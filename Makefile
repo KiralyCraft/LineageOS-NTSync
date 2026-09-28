@@ -1,8 +1,8 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
-.PHONY: help server-preflight test zip verify device-test publish
+.PHONY: help server-preflight test zip verify stage-release device-test publish
 help:
-	@printf '%s\n' 'make server-preflight' 'make test' 'make zip' 'make verify' 'make device-test (after manual installation)' 'make publish (after device validation)'
+	@printf '%s\n' 'make server-preflight' 'make test' 'make zip' 'make verify' 'make stage-release' 'make device-test (after manual installation)' 'make publish (after device validation)'
 server-preflight:
 	@./scripts/remote-build.sh preflight
 test:
@@ -12,6 +12,8 @@ zip:
 	@./scripts/remote-build.sh zip
 verify:
 	@python3 scripts/verify-dist.py dist
+stage-release:
+	@./scripts/stage-release.sh
 device-test:
 	@./scripts/device-test.sh
 publish:
