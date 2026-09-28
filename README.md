@@ -42,6 +42,8 @@ manifest; release publication requires a clean commit.
 manual installation handoff. It does not invoke GitHub Actions or an API.
 
 Upstream source and licensing are recorded in `driver/UPSTREAM.md` and `LICENSE`.
+Two local corrections to the imported selftest are documented in
+`tests/LOCAL_PATCHES.md`.
 The driver and UAPI header were imported from Linux stable v6.18.54. Any
 compatibility changes must be kept narrow and documented.
 

@@ -968,7 +968,7 @@ TEST(wake_all)
 	auto_event_args.manual = false;
 	auto_event_args.signaled = true;
 	objs[3] = ioctl(fd, NTSYNC_IOC_CREATE_EVENT, &auto_event_args);
-	EXPECT_EQ(0, objs[3]);
+	EXPECT_LE(0, objs[3]);
 
 	wait_args.timeout = get_abs_timeout(1000);
 	wait_args.objs = (uintptr_t)objs;
@@ -1272,6 +1272,9 @@ TEST(alert_all)
 #define STRESS_THREADS 4
 
 static unsigned int stress_counter;
+static unsigned int stress_overlap;
+static unsigned int stress_errors;
+static unsigned int stress_guard;
 static int stress_device, stress_start_event, stress_mutex;
 
 static void *stress_thread(void *arg)
@@ -1286,16 +1289,33 @@ static void *stress_thread(void *arg)
 	wait_args.owner = gettid();
 	wait_args.index = 0xdeadbeef;
 
-	ioctl(stress_device, NTSYNC_IOC_WAIT_ANY, &wait_args);
+	ret = ioctl(stress_device, NTSYNC_IOC_WAIT_ANY, &wait_args);
+	if (ret) {
+		__atomic_fetch_add(&stress_errors, 1, __ATOMIC_RELAXED);
+		return NULL;
+	}
 
 	wait_args.objs = (uintptr_t)&stress_mutex;
 
 	for (i = 0; i < STRESS_LOOPS; ++i) {
-		ioctl(stress_device, NTSYNC_IOC_WAIT_ANY, &wait_args);
+		ret = ioctl(stress_device, NTSYNC_IOC_WAIT_ANY, &wait_args);
+		if (ret) {
+			__atomic_fetch_add(&stress_errors, 1, __ATOMIC_RELAXED);
+			break;
+		}
 
-		++stress_counter;
+		if (__atomic_exchange_n(&stress_guard, 1, __ATOMIC_ACQ_REL))
+			__atomic_fetch_add(&stress_overlap, 1, __ATOMIC_RELAXED);
+		__atomic_store_n(&stress_counter,
+				 __atomic_load_n(&stress_counter, __ATOMIC_RELAXED) + 1,
+				 __ATOMIC_RELAXED);
+		__atomic_store_n(&stress_guard, 0, __ATOMIC_RELEASE);
 
-		unlock_mutex(stress_mutex, wait_args.owner, &count);
+		ret = unlock_mutex(stress_mutex, wait_args.owner, &count);
+		if (ret) {
+			__atomic_fetch_add(&stress_errors, 1, __ATOMIC_RELAXED);
+			break;
+		}
 	}
 
 	return NULL;
@@ -1333,7 +1353,10 @@ TEST(stress_wait)
 		EXPECT_EQ(0, ret);
 	}
 
-	EXPECT_EQ(STRESS_LOOPS * STRESS_THREADS, stress_counter);
+	EXPECT_EQ(STRESS_LOOPS * STRESS_THREADS,
+		  __atomic_load_n(&stress_counter, __ATOMIC_RELAXED));
+	EXPECT_EQ(0, __atomic_load_n(&stress_overlap, __ATOMIC_RELAXED));
+	EXPECT_EQ(0, __atomic_load_n(&stress_errors, __ATOMIC_RELAXED));
 
 	close(stress_start_event);
 	close(stress_mutex);

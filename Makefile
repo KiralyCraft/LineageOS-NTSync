@@ -2,7 +2,7 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 .PHONY: help server-preflight test zip verify stage-release device-test publish
 help:
-	@printf '%s\n' 'make server-preflight' 'make test' 'make zip' 'make verify' 'make stage-release' 'make device-test (after manual installation)' 'make publish (after device validation)'
+	@printf '%s\n' 'make server-preflight' 'make test' 'make zip' 'make verify' 'make stage-release' 'make device-test (after manual load or Magisk installation)' 'make publish (after Magisk validation)'
 server-preflight:
 	@./scripts/remote-build.sh preflight
 test:
