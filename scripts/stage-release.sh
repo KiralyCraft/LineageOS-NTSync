@@ -45,5 +45,7 @@ and NieR performance remain pending. Install only on the pinned device/build;
 the package checks this.
 NOTES
 git -C "$worktree" add release-assets
+git -C "$worktree" add -f "release-assets/$base-ntsync.ko"
+git -C "$worktree" ls-files --error-unmatch "release-assets/$base-ntsync.ko" >/dev/null
 git -C "$worktree" commit -m 'Stage verified NTSync release candidate'
 git -C "$worktree" push -u origin "$branch"
