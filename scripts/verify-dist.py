@@ -21,6 +21,9 @@ module = (folder / f'{base}-ntsync.ko').read_bytes()
 assert module[:4] == b'\x7fELF' and module[4] == 2 and struct.unpack_from('<H', module, 18)[0] == 183
 assert info['module_sha256'] == hashlib.sha256(module).hexdigest()
 assert info['profile'] == profile and info['release'] == release
+assert all(len(info['build'][key]) == 64 for key in (
+    'kernel_config_sha256', 'module_symvers_sha256', 'clang_sha256', 'pahole_sha256'
+))
 assert profile['kernel_release'].encode() in module
 with zipfile.ZipFile(folder / f'{base}-magisk.zip') as zf:
     assert zf.testzip() is None

@@ -13,6 +13,7 @@ source = pathlib.Path(sys.argv[1]).resolve()
 module_binary = pathlib.Path(sys.argv[2]).resolve()
 output_dir = pathlib.Path(sys.argv[3]).resolve()
 commit = sys.argv[4]
+kernel_work = pathlib.Path(sys.argv[5]).resolve() if len(sys.argv) > 5 else None
 profile = json.loads((source / 'profiles/current-install.json').read_text())
 release = json.loads((source / 'release.json').read_text())
 module_sha = hashlib.sha256(module_binary.read_bytes()).hexdigest()
@@ -46,6 +47,19 @@ with tempfile.TemporaryDirectory(prefix='ntsync-package-') as tmp:
         'profile': profile,
         'release': release,
     }
+    if kernel_work is not None:
+        compiler = pathlib.Path('/bigdata/hdmi-los-build/cache/lineage-22.2-display/prebuilts/clang/host/linux-x86/clang-r536225/bin/clang')
+        pahole = pathlib.Path('/bigdata/hdmi-los-build/cache/lineage-22.2-display/prebuilts/kernel-build-tools/linux-x86/bin/pahole')
+        config = kernel_work / 'kernel-out/.config'
+        symvers = kernel_work / 'kernel-out/Module.symvers'
+        manifest['build'] = {
+            'kernel_config_sha256': hashlib.sha256(config.read_bytes()).hexdigest(),
+            'module_symvers_sha256': hashlib.sha256(symvers.read_bytes()).hexdigest(),
+            'clang_sha256': hashlib.sha256(compiler.read_bytes()).hexdigest(),
+            'pahole_sha256': hashlib.sha256(pahole.read_bytes()).hexdigest(),
+            'baseline_command': 'make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=kernel-out vmlinux',
+            'module_command': 'make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=kernel-out M=source/driver modules',
+        }
     (output_dir / f'{base}-build-info.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
     zip_path = output_dir / f'{base}-magisk.zip'
     with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:

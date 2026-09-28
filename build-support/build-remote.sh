@@ -25,4 +25,4 @@ module="$source_root/driver/ntsync.ko"
 test -s "$module"
 llvm-readelf -h "$module" | grep -q 'AArch64'
 llvm-nm -u "$module" | tee "$work/logs/imported-symbols.txt"
-python3 "$source_root/build-support/package.py" "$source_root" "$module" "$work/output" "${SOURCE_COMMIT:-unknown}"
+python3 "$source_root/build-support/package.py" "$source_root" "$module" "$work/output" "${SOURCE_COMMIT:-unknown}" "$work"
