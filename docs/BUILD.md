@@ -19,6 +19,7 @@ gzip -dc "$work/target-config.gz" > "$work/kernel-out/.config"
 export PATH="$llvm:$pahole_dir:$PATH" ARCH=arm64 LLVM=1 LLVM_IAS=1
 make -C "$src" O="$work/kernel-out" olddefconfig
 make -j24 -C "$src" O="$work/kernel-out" vmlinux
+make -C "$src" O="$work/kernel-out" modules_prepare
 cp "$work/kernel-out/vmlinux.symvers" "$work/kernel-out/Module.symvers"
 ```
 
