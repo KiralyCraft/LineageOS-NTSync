@@ -1,0 +1,10 @@
+{
+  "gameplay": "PENDING_USER_RESTART",
+  "magisk_install": "PENDING",
+  "module_sha256": "56ab6dd84aecbe36f110972126da2072611467ae3527fb7e9579c0fa411dc908",
+  "native_selftests": "PASS",
+  "source_commit": "36ca527e501a20b59208f916a0a2e49f6069a21f",
+  "validated_utc": "2026-09-28T16:04:59.869162+00:00",
+  "wine_backend": "PASS",
+  "wine_prefix": "/mnt/usbssd/winprefixes/nier"
+}

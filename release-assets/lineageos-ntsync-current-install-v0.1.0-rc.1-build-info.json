@@ -1,0 +1,29 @@
+{
+  "build": {
+    "baseline_command": "make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=kernel-out vmlinux",
+    "clang_sha256": "2603435cc1f030ded14648f6ad19c70fa640c9f4b53aad73a83321753571a4b5",
+    "kernel_config_sha256": "1fb4fc72d79397406ee0bc9e5cffa2dd0011f3ca17b7b46b2a8939c9bb30e841",
+    "module_command": "make ARCH=arm64 LLVM=1 LLVM_IAS=1 O=kernel-out M=source/driver modules",
+    "module_symvers_sha256": "f1b465bb6167552c3cac33b4968f7b55dd8804726b4889ebbd1deb746bdf0e52",
+    "pahole_sha256": "c70a0701228ef79fe6624b5ae5ea8a6199c4b0ec271eff51581f483a1594468f"
+  },
+  "module_sha256": "56ab6dd84aecbe36f110972126da2072611467ae3527fb7e9579c0fa411dc908",
+  "profile": {
+    "clang": "r536225",
+    "device": "XQ-DQ72",
+    "id": "current-install",
+    "kernel_commit": "d00ba216ccda5d4fcc0d864729ae69d5b63d860c",
+    "kernel_config_gz_sha256": "3a571c2ddb2b56fca395037a32d12b2df4e81b928d053b88edcc7b2800db3b48",
+    "kernel_release": "5.15.176-gd00ba216ccda",
+    "lineage": "22.2-20250608-NIGHTLY-pdx234",
+    "ntsync_driver_sha256": "70578a24b0e6b61128f3ab39b9a77660b082c5cab916ad2dd18a61de389be5d3",
+    "ntsync_uapi_sha256": "006437ee52a3e04f921df77081eb5c21c44c71f598b10ac534c6ef9e78296262",
+    "ntsync_upstream": "v6.18.54"
+  },
+  "release": {
+    "module_id": "lineageos_ntsync",
+    "version": "0.1.0-rc.1",
+    "version_code": 20260928
+  },
+  "source_commit": "36ca527e501a20b59208f916a0a2e49f6069a21f"
+}
