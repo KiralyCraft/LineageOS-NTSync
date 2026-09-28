@@ -1,0 +1,12 @@
+{
+  "id": "current-install",
+  "device": "XQ-DQ72",
+  "lineage": "22.2-20250608-NIGHTLY-pdx234",
+  "kernel_release": "5.15.176-gd00ba216ccda",
+  "kernel_commit": "d00ba216ccda5d4fcc0d864729ae69d5b63d860c",
+  "kernel_config_gz_sha256": "3a571c2ddb2b56fca395037a32d12b2df4e81b928d053b88edcc7b2800db3b48",
+  "clang": "r536225",
+  "ntsync_upstream": "v6.18.54",
+  "ntsync_driver_sha256": "70578a24b0e6b61128f3ab39b9a77660b082c5cab916ad2dd18a61de389be5d3",
+  "ntsync_uapi_sha256": "006437ee52a3e04f921df77081eb5c21c44c71f598b10ac534c6ef9e78296262"
+}

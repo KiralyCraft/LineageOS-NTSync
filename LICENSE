@@ -1,0 +1,5 @@
+The Linux ntsync driver (driver/ntsync.c) is licensed GPL-2.0-only.
+The Linux ntsync userspace API header (driver/include/uapi/linux/ntsync.h)
+is licensed GPL-2.0 WITH Linux-syscall-note.
+Their original SPDX headers and copyright notices are preserved.
+Project build and packaging scripts are licensed GPL-2.0-only.
