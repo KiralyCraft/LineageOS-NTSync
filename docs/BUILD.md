@@ -19,9 +19,12 @@ gzip -dc "$work/target-config.gz" > "$work/kernel-out/.config"
 export PATH="$llvm:$pahole_dir:$PATH" ARCH=arm64 LLVM=1 LLVM_IAS=1
 make -C "$src" O="$work/kernel-out" olddefconfig
 make -j24 -C "$src" O="$work/kernel-out" vmlinux
+cp "$work/kernel-out/vmlinux.symvers" "$work/kernel-out/Module.symvers"
 ```
 
-The baseline must include complete `Module.symvers` because
+The `vmlinux` target emits `vmlinux.symvers` with the built-in kernel exports;
+external kbuild expects those records in `Module.symvers`. The module build
+must fail on any import not present in that table. This is required because
 `CONFIG_MODVERSIONS=y`; `modules_prepare` alone is insufficient. Compare the
 generated configuration with the target's and investigate any changed symbol.
 The pinned target also uses full Clang LTO and Clang CFI. Do not bypass either

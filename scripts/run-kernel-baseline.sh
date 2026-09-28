@@ -11,4 +11,8 @@ printf 'compiler=%s\n' "$(clang --version | head -1)"
 make -C "$src" O="$work/kernel-out" olddefconfig
 cp "$work/kernel-out/.config" "$work/kernel-config-generated"
 make -j24 -C "$src" O="$work/kernel-out" vmlinux
+test -s "$work/kernel-out/vmlinux.symvers"
+# The vmlinux target emits the complete built-in export table under this name.
+# External-module kbuild expects the same table as Module.symvers.
+cp "$work/kernel-out/vmlinux.symvers" "$work/kernel-out/Module.symvers"
 sha256sum "$work/kernel-out/Module.symvers" "$work/kernel-out/vmlinux" "$work/kernel-config-generated" > "$work/kernel-baseline-sha256"
