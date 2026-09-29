@@ -4,7 +4,7 @@ root=$(git rev-parse --show-toplevel)
 target=${DEVICE:-root@192.168.5.144}
 ssh -F /dev/null "$target" 'test -d /sys/module/ntsync && test -c /dev/ntsync && test "$(stat -c %a /dev/ntsync)" = 666'
 ssh -F /dev/null "$target" 'mkdir -p /tmp/ntsync-los-validation'
-tar -C "$root" -cf - driver/include/uapi tests/upstream | ssh -F /dev/null "$target" 'tar -xf - -C /tmp/ntsync-los-validation'
+tar -C "$root" -cf - driver/include/uapi tests/upstream scripts/proton-app | ssh -F /dev/null "$target" 'tar -xf - -C /tmp/ntsync-los-validation'
 ssh -F /dev/null "$target" bash -s <<'REMOTE'
 set -Eeuo pipefail
 work=/tmp/ntsync-los-validation
@@ -21,7 +21,7 @@ test -d "$prefix/pfx"
 touch "$work/wine-start.marker"
 timeout 120 runuser -u kiraly -- env HOME=/home/kiraly \
   WINPREFIX_ROOT=/mnt/usbssd/winprefixes PROTON_LOG=1 \
-  /usr/local/bin/proton-app nier --runinprefix cmd /c exit \
+  "$work/scripts/proton-app" nier --runinprefix cmd /c exit \
   > "$work/wine-smoke.log" 2>&1
 if ! grep -F -q 'ntsync: up and running.' "$work/wine-smoke.log" &&
    ! find "$prefix/logs" -type f -newer "$work/wine-start.marker" \

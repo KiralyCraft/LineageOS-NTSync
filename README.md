@@ -47,6 +47,31 @@ Two local corrections to the imported selftest are documented in
 The driver and UAPI header were imported from Linux stable v6.18.54. Any
 compatibility changes must be kept narrow and documented.
 
+## Proton launcher
+
+[`scripts/proton-app`](scripts/proton-app) is the standalone ARM64 GE-Proton
+launcher used on this device. Install it inside the Linux chroot as
+`/usr/local/bin/proton-app` with mode `0755`. It is separate from the Magisk
+module ZIP. `make device-test` copies the checked-in launcher to a temporary
+directory on the device for its Wine backend smoke test.
+
+By default, it uses `/opt/proton-ge/GE-Proton11-6-aarch64` and keeps one
+compatibility-data directory per application under `~/winprefix`. Set
+`GE_PROTON_ARM64_ROOT` and `WINPREFIX_ROOT` to use other locations. For example:
+
+```sh
+WINPREFIX_ROOT=/mnt/usbssd/winprefixes proton-app mygame /absolute/path/to/Game.exe
+WINPREFIX_ROOT=/mnt/usbssd/winprefixes proton-app mygame --winecfg
+WINPREFIX_ROOT=/mnt/usbssd/winprefixes proton-app mygame --path
+```
+
+The launcher also accepts an executable relative to the current directory or
+the named prefix, `NAME default` using `NAME/DEFAULT.sh`, and
+`NAME --runinprefix PROGRAM`. Run `proton-app` without arguments for the full
+usage text. It exposes all configured CPUs to Wine by default; set
+`PROTON_CPU_TOPOLOGY` to override the mapping. Other Proton and FEX environment
+variables can be passed through the shell environment.
+
 ## Installation and test
 
 Install `lineageos-ntsync-current-install-v0.1.0-rc.1-magisk.zip` through the

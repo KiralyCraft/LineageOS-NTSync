@@ -1,0 +1,243 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage:
+  proton-app NAME /absolute/path/to/application.exe [ARGUMENT ...]
+  proton-app NAME application.exe [ARGUMENT ...]
+  proton-app NAME path/relative/to/pfx/application.exe [ARGUMENT ...]
+  proton-app NAME default [ARGUMENT ...]
+  proton-app NAME --runinprefix PROGRAM [ARGUMENT ...]
+  proton-app NAME --winecfg [WINDOWS_VERSION]
+  proton-app NAME --path
+
+Each NAME gets an independent Proton compatibility-data directory under
+~/winprefix by default. A relative executable found in the current directory
+runs from there. Existing prefix symlinks are followed. Set WINPREFIX_ROOT or
+GE_PROTON_ARM64_ROOT to override the prefix root or Proton bundle. "default"
+reads NAME/DEFAULT.sh; that script must print one path relative to NAME/pfx.
+All configured CPUs are exposed to Wine by default. Set PROTON_CPU_TOPOLOGY
+to override this mapping.
+EOF
+}
+
+if (( $# < 2 )); then
+    usage >&2
+    exit 2
+fi
+
+app_name=$1
+shift
+
+if [[ ! "${app_name}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    echo "Invalid application name: ${app_name}" >&2
+    exit 2
+fi
+if [[ -z "${HOME:-}" ]]; then
+    echo "HOME is not set." >&2
+    exit 2
+fi
+
+prefix_root=${WINPREFIX_ROOT:-${HOME}/winprefix}
+proton_root=${GE_PROTON_ARM64_ROOT:-/opt/proton-ge/GE-Proton11-6-aarch64}
+proton=${proton_root}/proton
+
+if [[ ! -x "${proton}" ]]; then
+    echo "ARM64 GE-Proton executable is missing: ${proton}" >&2
+    exit 127
+fi
+if [[ ( -L $prefix_root || -e $prefix_root ) && ! -d $prefix_root ]]; then
+    echo "Prefix root is not a directory: ${prefix_root}" >&2
+    exit 126
+fi
+mkdir -p -- "$prefix_root"
+prefix_root=$(realpath -e -- "$prefix_root")
+compat_data=${prefix_root}/${app_name}
+client_dir=${prefix_root}/.proton-client
+if [[ ( -L $compat_data || -e $compat_data ) && ! -d $compat_data ]]; then
+    echo "Compatibility-data path is not a directory: ${compat_data}" >&2
+    exit 126
+fi
+mkdir -p -- "$compat_data" "$client_dir"
+compat_data=$(realpath -e -- "$compat_data")
+log_dir=${compat_data}/logs
+if [[ ( -L $log_dir || -e $log_dir ) && ! -d $log_dir ]]; then
+    echo "Log path is not a directory: ${log_dir}" >&2
+    exit 126
+fi
+mkdir -p -- "$log_dir"
+
+# Avoid capturing a temporarily restricted launch-time CPU affinity in Wine.
+proton_cpu_topology=${PROTON_CPU_TOPOLOGY:-}
+if [[ -z $proton_cpu_topology ]]; then
+    proton_cpu_count=$(getconf _NPROCESSORS_CONF)
+    proton_cpu_ids=$(seq -s, 0 "$((proton_cpu_count - 1))")
+    proton_cpu_topology="${proton_cpu_count}:${proton_cpu_ids}"
+fi
+
+proton_environment=(
+    "UMU_ID=0"
+    "SteamAppId=0"
+    "SteamGameId=0"
+    "STEAM_COMPAT_APP_ID=0"
+    "STEAM_COMPAT_DATA_PATH=${compat_data}"
+    "STEAM_COMPAT_CLIENT_INSTALL_PATH=${client_dir}"
+    "PROTON_LOG=${PROTON_LOG:-0}"
+    "PROTON_LOG_DIR=${log_dir}"
+    "PROTON_CPU_TOPOLOGY=${proton_cpu_topology}"
+    "PULSE_LATENCY_MSEC=${PULSE_LATENCY_MSEC-300}"
+    "FEX_TSOENABLED=${FEX_TSOENABLED-0}"
+    "STEAM_FEX_TSOENABLED=${STEAM_FEX_TSOENABLED-0}"
+    "FEX_DISABLEL2CACHE=${FEX_DISABLEL2CACHE-0}"
+    "FEX_DYNAMICL1CACHE=${FEX_DYNAMICL1CACHE-0}"
+    "FEX_MAXINST=${FEX_MAXINST-5000}"
+    "XDG_CACHE_HOME=${XDG_CACHE_HOME-${compat_data}/cache}"
+)
+
+run_windows_program() {
+    local path_mode=$1
+    shift
+    local requested_path=$1
+    local executable relative_path windows_path drive_c
+    shift
+
+    if [[ $requested_path =~ ^[Cc]:\\ ]]; then
+        if [[ ${requested_path,,} != *.exe ]]; then
+            echo "Windows executable must end in .exe: ${requested_path}" >&2
+            exit 2
+        fi
+        relative_path=${requested_path:3}
+        relative_path=${relative_path//\\//}
+        executable=${compat_data}/pfx/drive_c/${relative_path}
+        if [[ ! -f $executable ]]; then
+            echo "Windows executable does not exist: ${requested_path}" >&2
+            exit 126
+        fi
+        cd -- "$(dirname -- "$executable")"
+        exec env "${proton_environment[@]}" \
+            "$proton" runinprefix "$requested_path" "$@"
+    fi
+
+    if [[ $requested_path = /* || ( $path_mode == auto &&
+          $requested_path != pfx/* && $requested_path != drive_c/* &&
+          -f $requested_path ) ]]; then
+        if ! executable=$(realpath -e -- "$requested_path") ||
+           [[ ! -f $executable ]]; then
+            echo "Windows executable is not a regular file: ${requested_path}" >&2
+            exit 126
+        fi
+        if [[ ${executable,,} != *.exe ]]; then
+            echo "Windows executable must end in .exe: ${requested_path}" >&2
+            exit 2
+        fi
+        proton_environment+=(
+            "STEAM_COMPAT_INSTALL_PATH=$(dirname -- "$executable")"
+        )
+        cd -- "$(dirname -- "$executable")"
+        exec env "${proton_environment[@]}" "$proton" run "$executable" "$@"
+    fi
+
+    if [[ $requested_path == *$'\n'* || -z $requested_path ]]; then
+        echo "Invalid prefix-relative executable path." >&2
+        exit 2
+    fi
+
+    if [[ $requested_path == pfx/* ]]; then
+        executable=${compat_data}/${requested_path}
+    else
+        executable=${compat_data}/pfx/${requested_path}
+    fi
+    executable=$(realpath -m -s -- "$executable")
+    if [[ ! -f $executable ]]; then
+        echo "Prefix executable does not exist: ${requested_path}" >&2
+        exit 126
+    fi
+    if [[ ${executable,,} != *.exe ]]; then
+        echo "Prefix executable must end in .exe: ${requested_path}" >&2
+        exit 2
+    fi
+
+    drive_c=$(realpath -m -s -- "${compat_data}/pfx/drive_c")
+    case $executable in
+        "$drive_c"/*)
+            relative_path=${executable#"$drive_c"/}
+            windows_path="C:\\${relative_path//\//\\}"
+            ;;
+        *)
+            echo "Prefix executable must be below pfx/drive_c: ${requested_path}" >&2
+            exit 126
+            ;;
+    esac
+
+    cd -- "$(dirname -- "$executable")"
+    exec env "${proton_environment[@]}" \
+        "$proton" runinprefix "$windows_path" "$@"
+}
+
+case $1 in
+    default)
+        shift
+        default_file=${compat_data}/DEFAULT.sh
+        if [[ ! -f $default_file || -L $default_file ]]; then
+            echo "Default executable descriptor is missing: ${default_file}" >&2
+            exit 126
+        fi
+        if ! default_executable=$(/usr/bin/bash -- "$default_file"); then
+            echo "Default executable descriptor failed: ${default_file}" >&2
+            exit 126
+        fi
+        if [[ -z $default_executable || $default_executable == *$'\n'* ]]; then
+            echo "DEFAULT.sh must print exactly one non-empty path." >&2
+            exit 126
+        fi
+        if [[ $default_executable = /* || $default_executable =~ ^[A-Za-z]:\\ ]]; then
+            echo "DEFAULT.sh must print a path relative to pfx/." >&2
+            exit 126
+        fi
+        run_windows_program prefix "$default_executable" "$@"
+        ;;
+    --path)
+        if (( $# != 1 )); then
+            usage >&2
+            exit 2
+        fi
+        printf '%s\n' "${compat_data}"
+        ;;
+    --runinprefix)
+        shift
+        if (( $# == 0 )); then
+            usage >&2
+            exit 2
+        fi
+        if [[ $1 =~ ^[Cc]:\\ ]]; then
+            windows_relative_path=${1:3}
+            unix_relative_path=${windows_relative_path//\\//}
+            guest_executable=${compat_data}/pfx/drive_c/${unix_relative_path}
+            if [[ -f ${guest_executable} ]]; then
+                cd -- "$(dirname -- "${guest_executable}")"
+            fi
+        fi
+        exec env "${proton_environment[@]}" "${proton}" runinprefix "$@"
+        ;;
+    --winecfg)
+        shift
+        if (( $# > 1 )); then
+            usage >&2
+            exit 2
+        fi
+        if (( $# == 1 )); then
+            exec env "${proton_environment[@]}" \
+                "${proton}" runinprefix winecfg /v "$1"
+        fi
+        exec env "${proton_environment[@]}" "${proton}" runinprefix winecfg
+        ;;
+    --*)
+        echo "Unknown option: $1" >&2
+        usage >&2
+        exit 2
+        ;;
+    *)
+        run_windows_program auto "$@"
+        ;;
+esac

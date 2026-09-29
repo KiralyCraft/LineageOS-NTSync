@@ -16,7 +16,8 @@ After installation:
    accessibility from the chroot user.
 3. Run the imported Linux ntsync selftests as that user. Check dmesg for
    `ntsync`, module signature, CFI, and SELinux failures.
-4. Start GE-Proton11-6 in the NieR prefix with a short built-in command.
+4. Start GE-Proton11-6 in the NieR prefix with a short built-in command through
+   the repository's `scripts/proton-app` launcher.
    Confirm `ntsync: up and running.` and that the test process exits.
 5. Compare NieR frame presentation only after the user manually restarts it.
 

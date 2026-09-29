@@ -7,7 +7,7 @@ server-preflight:
 	@./scripts/remote-build.sh preflight
 test:
 	@python3 -m unittest discover -s tests -p 'test_*.py'
-	@for script in module/*.sh scripts/*.sh build-support/*.sh; do bash -n "$$script"; done
+	@for script in module/*.sh scripts/*.sh scripts/proton-app build-support/*.sh; do bash -n "$$script"; done
 zip:
 	@./scripts/remote-build.sh zip
 verify:
